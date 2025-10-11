@@ -1,0 +1,24 @@
+conversation
+{
+	actor = "TheRedactedStationary";
+	page //1
+	{
+		name = "[Redacted]";
+		panel = "DIAGEN1";
+		voice = "SVOX/GN053";
+		dialog = "$TXT_REDACTED141"; //this is it, the big heist
+		choice
+		{
+			text = "$TXT_REDACTED1401"; //Okay
+			nextpage = 2;
+			CloseDialog = true;
+		}
+	}
+page //2
+	{
+		name = "[Redacted]";
+		panel = "DIAGEN5";
+		voice = "SVOX/GN054";
+		dialog = "$TXT_REDACTED142"; //I'll see you at the end cutscene bye lol
+	}
+}
