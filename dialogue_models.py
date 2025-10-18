@@ -13,6 +13,7 @@ class DialogueChoice:
     arg0: Optional[int] = None
     arg1: Optional[int] = None
     closedialog: bool = False
+    nomessage: Optional[str] = None  # Add this line
     
     def to_dict(self) -> Dict[str, Any]:
         return {k: v for k, v in asdict(self).items() if v is not None and v != False}
