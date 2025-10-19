@@ -33,9 +33,9 @@ DEFAULT_PLAIN_TEXT_EXAMPLE = """#NAME Chaingun Guy
 #Page 1
 I have a cool chaingun! I want a shotgun though...
 #CHOICE:
-- Deal! (#give(Chaingun), #nextpage(2))
+- Deal! (#give(Chaingun), #nextpage(2), #nomessage(No shotgun, no chaingun!))
 ---
-#NAME Chaingun Guy  
+#NAME Chaingun Guy
 #Page 2
 I love this!
 #CHOICE:"""

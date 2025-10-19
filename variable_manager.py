@@ -27,7 +27,6 @@ class VariableManager:
     def extract_variables_from_pages(pages: List[DialoguePage]) -> Dict[str, str]:
         """Extract all variables used in dialogue pages"""
         variables = {}
-        
         for page in pages:
             if page.dialog_var and page.dialog_var not in variables:
                 variables[page.dialog_var] = page.dialog or ""

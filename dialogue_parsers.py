@@ -5,7 +5,7 @@ from dialogue_models import DialoguePage, DialogueChoice
 class DialogueParser:
     """Bidirectional parser between plain text, USDF, and internal structure"""
     
-    # Regex patterns
+    # Regex patterns to match plain-text formats
     NOMESSAGE_RE = re.compile(r'#nomessage\(([^)]+)\)')
     NAME_RE = re.compile(r'#NAME\s+(.*)')
     PAGE_RE = re.compile(r'#Page\s+(\d+)')
@@ -33,7 +33,15 @@ class DialogueParser:
         
         for block in page_blocks:
             lines = block.split('\n')
-            page_data = {"id": None, "name": "Unknown", "dialog": "", "choices": []}
+            page_data = {
+                "id": None,
+                "name": "Unknown",
+                "dialog": "",
+                "dialog_var": None, 
+                "panel": None,       
+                "voice": None,       
+                "choices": []
+                }
             mode = "PAGE_HEADER"
             dialog_lines = []
             
@@ -67,7 +75,7 @@ class DialogueParser:
             
             if page_data["id"] is not None:
                 parsed_pages.append(DialoguePage(**page_data))
-                
+        
         return parsed_pages
     
     @staticmethod
@@ -127,7 +135,6 @@ class DialogueParser:
     def pages_to_plain_text(pages: List[DialoguePage]) -> str:
         """Convert structured pages back to plain text format"""
         output = []
-        
         for page in pages:
             output.append(f"#NAME {page.name}")
             output.append(f"#Page {page.id}")
@@ -186,5 +193,4 @@ class DialogueParser:
                 output.extend(choice_parts)
             
             output.append("---")
-        
         return "\n".join(output)

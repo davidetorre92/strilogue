@@ -52,12 +52,18 @@ class DialogueEditorApp:
             'literal_output': False,
             'master_variables': {},
             'graphviz_source': "",
-            'editor_key': str(uuid.uuid4())
+            'editor_key': str(uuid.uuid4()),
+            'conflict_variables': {},
+            'last_modified': 'plain',
+            # Add these - initialize editor keys with the same values
+            'plain_editor': DEFAULT_PLAIN_TEXT_EXAMPLE,
+            'zdoom_editor': DEFAULT_ZDOOM_EXAMPLE
         }
         
         for key, value in defaults.items():
             if key not in st.session_state:
-                st.session_state[key] = value    
+                st.session_state[key] = value
+
 
     def render_header(self):
         """Render the application header"""
@@ -122,22 +128,31 @@ class DialogueEditorApp:
         """Convert plain text to ZDoom format"""
         try:
             pages = DialogueParser.parse_plain_text(st.session_state.plain_text)
+            if not pages:
+                st.error("❌ No valid pages found in plain text. Please check your syntax.")
+                return
             self.update_from_pages(pages)
             st.success("✅ Converted Plain Text to ZDoom Format!")
             st.rerun()
         except Exception as e:
             st.error(f"❌ Conversion failed: {str(e)}")
+            with st.expander("Debug Info"):
+                st.code(f"Plain text content:\n{st.session_state.plain_text}")
 
     def sync_zdoom_to_plain(self):
         """Convert ZDoom format to plain text"""
         try:
             pages = USDFConverter.parse_zdoom_dialogue(st.session_state.zdoom_text)
+            if not pages:
+                st.error("❌ No valid pages found in ZDoom text. Please check your syntax.")
+                return
             self.update_from_pages(pages)
             st.success("✅ Converted ZDoom Format to Plain Text!")
             st.rerun()
         except Exception as e:
             st.error(f"❌ Conversion failed: {str(e)}")
-
+            with st.expander("Debug Info"):
+                st.code(f"ZDoom content:\n{st.session_state.zdoom_text}")
 
     def render_sync_buttons(self):
         """Render the bidirectional sync buttons between editors"""
@@ -202,84 +217,29 @@ class DialogueEditorApp:
         st.markdown("**1. Plain Text Editor** 📝")
         st.caption("Primary editing interface. Use #tags for metadata and logic.")
         
-        plain_text = st.text_area(
+        st.text_area(
             "Plain Dialogue",
             value=st.session_state.plain_text,
             height=400,
-            key="plain_editor",
+            key="plain_editor",  # This key is crucial
             label_visibility="collapsed",
             help="Edit dialogue in plain text format with #tags"
         )
-        
-        # Track changes
-        if plain_text != st.session_state.plain_text:
-            st.session_state.plain_text = plain_text
-            # st.session_state.last_modified = 'plain'
-            # st.session_state.unsynced_changes = True
+
     
     def render_zdoom_editor(self):
         """Render the ZDoom/USDF editor"""
         st.markdown("**2. ZDoom Script Editor** ⚙️")
         st.caption("Edit USDF directly. Changes require sync confirmation.")
         
-        zdoom_text = st.text_area(
+        st.text_area(
             "ZDoom Dialogue", 
             value=st.session_state.zdoom_text,
             height=400,
-            key="zdoom_editor",
+            key="zdoom_editor",  # This key is crucial
             label_visibility="collapsed",
             help="Edit dialogue in ZDoom USDF format"
         )
-        
-        # Track changes
-        if zdoom_text != st.session_state.zdoom_text:
-            st.session_state.zdoom_text = zdoom_text
-            # st.session_state.last_modified = 'zdoom'
-            # st.session_state.unsynced_changes = True
-    
-    def render_sync_controls(self):
-        """Render synchronization controls and conflict resolution"""
-        col1, col2, col3 = st.columns([1, 1, 2])
-        
-        with col1:
-            actor_name = st.text_input(
-                "Actor Class Name",
-                value=st.session_state.actor_name,
-                key='actor_name_input',
-                help="Class name for the conversation actor"
-            )
-            
-            # Track actor name changes
-            if actor_name != st.session_state.actor_name:
-                st.session_state.actor_name = actor_name
-                st.session_state.unsynced_changes = True
-        
-        with col2:
-            st.checkbox(
-                "Literal Text Output",
-                value=st.session_state.literal_output,
-                key='literal_output_checkbox',
-                help="Substitute variables with their text values"
-            )
-        
-        with col3:
-            self.render_sync_button()
-        
-        # Show sync status
-        if st.session_state.unsynced_changes:
-            source = "Plain Text" if st.session_state.last_modified == 'plain' else "ZDoom Script"
-            st.warning(f"⚠️ Unsynchronized changes detected in {source}. Click 'Sync Editors' to apply.")
-        
-        # Show conflict resolution if needed
-        if st.session_state.conflict_variables:
-            self.render_conflict_resolution()
-        
-        st.markdown("---")
-    
-    # def render_sync_button(self):
-    #     """Render the synchronization button with logic"""
-    #     if st.button("🔄 Sync Editors", type="primary", width='stretch'):
-    #         self.sync_editors()
     
     def render_conflict_resolution(self):
         """Render variable conflict resolution interface"""
@@ -312,48 +272,6 @@ class DialogueEditorApp:
             st.session_state.conflict_variables = {}
             st.rerun()
 
-    # def sync_editors(self):
-    #     """Synchronize between plain text and USDF editors"""
-    #     try:
-    #         # Always parse from the source that was last modified
-    #         if st.session_state.last_modified == 'plain':
-    #             # Plain text was modified - parse and convert to USDF
-    #             pages = DialogueParser.parse_plain_text(st.session_state.plain_text)
-    #         else:  # ZDoom was modified
-    #             # USDF was modified - parse and convert to plain text  
-    #             pages = USDFConverter.parse_zdoom_dialogue(st.session_state.zdoom_text)
-            
-    #         # Update ALL representations from the canonical pages
-    #         self.update_from_pages(pages)
-            
-    #         st.session_state.unsynced_changes = False
-    #         st.success("✅ Editors synchronized successfully!")
-    #         st.rerun()
-            
-    #     except Exception as e:
-    #         st.error(f"❌ Synchronization failed: {str(e)}")
-    #         st.info("Please check your syntax and try again.")
-    #     """Synchronize between plain text and USDF editors"""
-    #     try:
-    #         # Always parse from the source that was last modified
-    #         if st.session_state.last_modified == 'plain':
-    #             # Plain text was modified - parse and convert to USDF
-    #             pages = DialogueParser.parse_plain_text(st.session_state.plain_text)
-    #         else:  # ZDoom was modified
-    #             # USDF was modified - parse and convert to plain text  
-    #             pages = USDFConverter.parse_zdoom_dialogue(st.session_state.zdoom_text)
-            
-    #         # Update ALL representations from the canonical pages
-    #         self.update_from_pages(pages)
-            
-    #         st.session_state.unsynced_changes = False
-    #         st.success("✅ Editors synchronized successfully!")
-    #         st.rerun()
-            
-    #     except Exception as e:
-    #         st.error(f"❌ Synchronization failed: {str(e)}")
-    #         st.info("Please check your syntax and try again.")
-
     def update_from_pages(self, pages: List[DialoguePage]):
         """Update all application state from parsed pages"""
         # Extract variables from the new pages
@@ -369,19 +287,28 @@ class DialogueEditorApp:
         )
         
         # Generate both text representations from the canonical pages
-        st.session_state.plain_text = DialogueParser.pages_to_plain_text(pages)
-        st.session_state.zdoom_text = USDFConverter.pages_to_zdoom_text(
+        plain_text_result = DialogueParser.pages_to_plain_text(pages)
+        zdoom_text_result = USDFConverter.pages_to_zdoom_text(
             pages, 
             st.session_state.actor_name,
             st.session_state.literal_output,
             st.session_state.master_variables
         )
+        # Debug output
+        st.info(f"Generated {len(plain_text_result)} chars of plain text and {len(zdoom_text_result)} chars of ZDoom text")
+
+        # Update BOTH the session state AND the editor keys directly
+        st.session_state.plain_text = plain_text_result
+        st.session_state.zdoom_text = zdoom_text_result
+        st.session_state.plain_editor = plain_text_result  # Update the widget directly
+        st.session_state.zdoom_editor = zdoom_text_result  # Update the widget directly
         
         # Generate graph visualization
         st.session_state.graphviz_source = GraphvizGenerator.generate_graphviz_source(pages)
         
         # Refresh editor key to force UI update
         st.session_state.editor_key = str(uuid.uuid4())
+        
 
     def check_variable_conflicts(self, script_variables: Dict[str, str]):
         """Check for variable value conflicts between script and master variables"""
@@ -401,40 +328,43 @@ class DialogueEditorApp:
         st.caption("Variables found in your dialogue. New or modified variables appear below.")
         
         if st.session_state.zdoom_text:
-            # Get current pages for variable extraction
+            # Get current pages for variable extraction - try both parsers safely
             try:
-                if st.session_state.last_modified == 'plain':
-                    pages = DialogueParser.parse_plain_text(st.session_state.plain_text)
-                else:
+                # Try parsing from plain text first
+                pages = DialogueParser.parse_plain_text(st.session_state.plain_text)
+            except:
+                try:
+                    # If that fails, try parsing from ZDoom
                     pages = USDFConverter.parse_zdoom_dialogue(st.session_state.zdoom_text)
-                
-                # Generate snippet
-                snippet = VariableManager.generate_language_snippet(
-                    pages, 
-                    st.session_state.master_variables
+                except Exception as e:
+                    st.error(f"Could not parse dialogue: {e}")
+                    pages = []
+            
+            # Generate snippet
+            snippet = VariableManager.generate_language_snippet(
+                pages, 
+                st.session_state.master_variables
+            )
+            
+            if snippet:
+                st.text_area(
+                    "Language File Snippet (New/Changed Variables)",
+                    value=snippet,
+                    height=200,
+                    help="Variables that are new or have different values from your language file"
                 )
                 
-                if snippet:
-                    st.text_area(
-                        "Language File Snippet (New/Changed Variables)",
-                        value=snippet,
-                        height=200,
-                        help="Variables that are new or have different values from your language file"
-                    )
-                    
-                    # Download button
-                    st.download_button(
-                        label="📥 Download Language Snippet",
-                        data=snippet,
-                        file_name="dialogue_snippet.txt",
-                        mime="text/plain",
-                        width='stretch'
-                    )
-                else:
-                    st.info("🎉 No new or modified variables detected. All variables match your language file.")
-                    
-            except Exception as e:
-                st.error(f"Could not generate variable snippet: {e}")
+                # Download button
+                st.download_button(
+                    label="📥 Download Language Snippet",
+                    data=snippet,
+                    file_name="dialogue_snippet.txt",
+                    mime="text/plain",
+                    use_container_width=True
+                )
+            else:
+                st.info("🎉 No new or modified variables detected. All variables match your language file.")
+                
         else:
             st.info("👆 Sync editors to see variables")
         

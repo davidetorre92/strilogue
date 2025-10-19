@@ -61,6 +61,9 @@ class USDFConverter:
         arg1_match = re.search(r'arg1\s*=\s*(\d+)', choice_content)
         close_match = re.search(r'closedialog\s*=\s*(true)', choice_content, re.IGNORECASE)
         nomessage_match = re.search(r'nomessage\s*=\s*"([^"]*)"', choice_content)
+        
+        # Parse cost block (treat it as a require for now)
+        cost_match = re.search(r'cost\s*\{[^}]*item\s*=\s*"([^"]*)"[^}]*amount\s*=\s*(\d+)', choice_content, re.DOTALL)
 
         # Check if text is a variable
         text = text_match.group(1) if text_match else ""
@@ -69,11 +72,18 @@ class USDFConverter:
             text_var = text
             text = ""
         
+        # Use cost as require if no explicit require
+        require_data = None
+        if require_match:
+            require_data = (require_match.group(1), int(require_match.group(2)))
+        elif cost_match:
+            require_data = (cost_match.group(1), int(cost_match.group(2)))
+        
         return DialogueChoice(
             text=text,
             text_var=text_var,
             nextpage=int(nextpage_match.group(1)) if nextpage_match else None,
-            require=(require_match.group(1), int(require_match.group(2))) if require_match else None,
+            require=require_data,
             giveitem=give_match.group(1) if give_match else None,
             special=int(special_match.group(1)) if special_match else None,
             arg0=int(arg0_match.group(1)) if arg0_match else None,
